@@ -22,7 +22,10 @@ def push_model_dir(model_dir: str | Path, repo_id: str) -> None:
         parameter.numel() for parameter in model.parameters() if parameter.requires_grad
     )
     size_tag = model_size_tag(num_parameters)
-    if "ipa-transcriptor" in repo_id and not repo_id.split("/")[-1].endswith("M"):
+    if repo_id.endswith("ipa-transcriptor"):
+        owner = repo_id.split("/")[0]
+        repo_id = f"{owner}/ipa-transcriptor-{size_tag}"
+    elif "ipa-transcriptor" in repo_id and not repo_id.split("/")[-1].endswith("M"):
         owner = repo_id.split("/")[0]
         repo_id = f"{owner}/ipa-transcriptor-{size_tag}"
     create_repo(repo_id, exist_ok=True, token=token)

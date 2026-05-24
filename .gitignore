@@ -12,7 +12,15 @@ build/
 data/raw/
 data/processed/*.csv
 !data/processed/.gitkeep
-runs/
+runs/**
+!runs/**/
+!runs/**/metrics.csv
+!runs/**/metrics.jsonl
+!runs/**/benchmark.json
+!runs/**/run_meta.json
+runs/**/checkpoint-*/
+runs/**/best/
+runs/**/tb/
 *.pt
 *.pth
 wandb/

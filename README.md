@@ -112,11 +112,22 @@ $$
 
 Decoding uses beam search with `num_beams=4`. Corpus BLEU is computed with SacreBLEU.
 
+### Benchmark results
+
+Fine-tuned `google/byt5-small` on NVIDIA L4, run `colab_l4_bf16`, beam search:
+
+| Split | Loss | Perplexity | Exact match | CER | BLEU |
+| ----- | ---: | ---------: | ----------: | --: | ---: |
+| Validation | 0.151 | 1.164 | 0.598 | 0.107 | 59.8 |
+| Test | 0.148 | 1.159 | 0.611 | 0.104 | 61.1 |
+
+Full JSON: `docs/colab_l4_bf16_benchmark.json`.
+
 ## Installation
 
 ```bash
-git clone https://github.com/pymlex/ipa-transcriptor.git
-cd ipa-transcriptor
+git clone https://github.com/pymlex/ipa-transcriptor-300M.git
+cd ipa-transcriptor-300M
 python -m venv .venv
 source .venv/bin/activate
 pip install -U pip
@@ -129,7 +140,7 @@ Required keys in `.env`:
 - `KAGGLE_USERNAME`
 - `KAGGLE_KEY`
 - `HF_TOKEN`
-- `HF_REPO_ID` optional, final Hub id becomes `pymlex/ipa-transcriptor-{N}M`
+- `HF_REPO_ID` default `pymlex/ipa-transcriptor-300M` for model weights on the Hub
 
 ## Data download and preparation
 
@@ -222,11 +233,11 @@ print(transcribe("analytical"))
 ```bash
 export PYTHONPATH=.
 export CHECKPOINT=runs/l4_run1/best
-export HF_REPO_ID=pymlex/ipa-transcriptor
+export HF_REPO_ID=pymlex/ipa-transcriptor-300M
 python main.py push --checkpoint "$CHECKPOINT"
 ```
 
-The script uploads tokenizer and model with `push_to_hub` and names the repository `pymlex/ipa-transcriptor-{N}M` from the parameter count.
+The script uploads tokenizer and model with `push_to_hub` to `pymlex/ipa-transcriptor-300M`.
 
 ```bash
 CHECKPOINT=runs/l4_run1/best bash scripts/push_hf.sh
@@ -239,7 +250,7 @@ Open `notebooks/colab.ipynb`. The notebook calls shell scripts for clone, instal
 ## Project layout
 
 ```text
-ipa-transcriptor/
+ipa-transcriptor-300M/
 ├── configs/default.yaml
 ├── data/prepare.py
 ├── data/hf_dataset.py
