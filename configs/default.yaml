@@ -17,7 +17,7 @@ weight_decay: 0.01
 warmup_ratio: 0.06
 label_smoothing: 0.0
 fp16: true
-logging_steps: 50
+logging_steps: 25
 eval_steps: 500
 save_steps: 500
 beam_size: 4

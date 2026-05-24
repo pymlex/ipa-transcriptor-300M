@@ -21,7 +21,7 @@ class TrainConfig(BaseModel):
     warmup_ratio: float = 0.06
     label_smoothing: float = 0.0
     fp16: bool = True
-    logging_steps: int = 50
+    logging_steps: int = 25
     eval_steps: int = 500
     save_steps: int = 500
     beam_size: int = 4
