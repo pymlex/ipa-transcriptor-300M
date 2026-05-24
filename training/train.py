@@ -4,7 +4,6 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-import numpy as np
 import torch
 from dotenv import load_dotenv
 from transformers import (
@@ -35,29 +34,6 @@ class MetricsLoggerCallback(TrainerCallback):
         record["step"] = int(state.global_step)
         record["epoch"] = float(state.epoch) if state.epoch is not None else 0.0
         self.logger.log(record)
-
-
-class TrainingProgressCallback(TrainerCallback):
-    def on_train_begin(self, args, state, control, **kwargs) -> None:
-        total = state.max_steps
-        epochs = args.num_train_epochs
-        print(f"Training start: epochs={epochs} max_steps={total}", flush=True)
-
-    def on_log(self, args, state, control, logs=None, **kwargs) -> None:
-        if logs is None or not state.is_world_process_zero:
-            return
-        epoch = float(state.epoch) if state.epoch is not None else 0.0
-        step = int(state.global_step)
-        parts = [f"epoch={epoch:.3f}", f"step={step}"]
-        if "loss" in logs:
-            parts.append(f"train_loss={logs['loss']:.4f}")
-        if "eval_loss" in logs:
-            parts.append(f"eval_loss={logs['eval_loss']:.4f}")
-        if "learning_rate" in logs:
-            parts.append(f"lr={logs['learning_rate']:.2e}")
-        if "epoch" in logs:
-            parts.append(f"logged_epoch={logs['epoch']:.3f}")
-        print(" | ".join(parts), flush=True)
 
 
 def count_parameters(model: torch.nn.Module) -> int:
@@ -100,6 +76,16 @@ def warmup_steps_from_ratio(
     return max(int(total_steps * warmup_ratio), 1)
 
 
+def resolve_mixed_precision(config: TrainConfig) -> tuple[bool, bool]:
+    if not torch.cuda.is_available():
+        return False, False
+    if config.bf16 and torch.cuda.is_bf16_supported():
+        return False, True
+    if config.fp16:
+        return True, False
+    return False, False
+
+
 def run_training(config: TrainConfig, run_dir: Path) -> Path:
     load_dotenv()
     hf_token = os.environ.get("HF_TOKEN")
@@ -132,8 +118,12 @@ def run_training(config: TrainConfig, run_dir: Path) -> Path:
         remove_columns=dataset["train"].column_names,
         desc="tokenise",
     )
-    data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model)
-    use_fp16 = config.fp16 and torch.cuda.is_available()
+    data_collator = DataCollatorForSeq2Seq(
+        tokenizer=tokenizer,
+        model=model,
+        label_pad_token_id=-100,
+    )
+    use_fp16, use_bf16 = resolve_mixed_precision(config)
     warmup_steps = warmup_steps_from_ratio(
         len(tokenised["train"]),
         config.batch_size,
@@ -150,11 +140,11 @@ def run_training(config: TrainConfig, run_dir: Path) -> Path:
         learning_rate=config.learning_rate,
         weight_decay=config.weight_decay,
         warmup_steps=warmup_steps,
+        max_grad_norm=config.max_grad_norm,
         label_smoothing_factor=config.label_smoothing,
         logging_strategy="steps",
         logging_steps=config.logging_steps,
         logging_first_step=True,
-        logging_nan_inf_filter=False,
         eval_strategy="steps",
         eval_steps=config.eval_steps,
         save_strategy="steps",
@@ -165,12 +155,11 @@ def run_training(config: TrainConfig, run_dir: Path) -> Path:
         greater_is_better=False,
         predict_with_generate=False,
         fp16=use_fp16,
+        bf16=use_bf16,
         dataloader_num_workers=config.num_workers,
         disable_tqdm=False,
         report_to=[],
         seed=config.seed,
-        log_level="info",
-        log_level_replica="warning",
     )
     trainer = build_trainer(
         model,
@@ -178,16 +167,12 @@ def run_training(config: TrainConfig, run_dir: Path) -> Path:
         tokenised,
         data_collator,
         tokenizer,
-        callbacks=[
-            MetricsLoggerCallback(metrics_logger),
-            TrainingProgressCallback(),
-        ],
+        callbacks=[MetricsLoggerCallback(metrics_logger)],
     )
+    precision = "bf16" if use_bf16 else "fp16" if use_fp16 else "fp32"
     print(
-        f"Train samples={len(tokenised['train'])} "
-        f"val samples={len(tokenised['validation'])} "
-        f"warmup_steps={warmup_steps} "
-        f"logging_steps={config.logging_steps}",
+        f"precision={precision} train={len(tokenised['train'])} "
+        f"val={len(tokenised['validation'])} warmup_steps={warmup_steps}",
         flush=True,
     )
     trainer.train()
@@ -201,6 +186,7 @@ def run_training(config: TrainConfig, run_dir: Path) -> Path:
         "num_parameters": count_parameters(model),
         "config": config.model_dump(),
         "warmup_steps": warmup_steps,
+        "precision": precision,
     }
     (run_dir / "run_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     run_benchmark(

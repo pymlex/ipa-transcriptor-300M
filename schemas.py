@@ -20,7 +20,9 @@ class TrainConfig(BaseModel):
     weight_decay: float = 0.01
     warmup_ratio: float = 0.06
     label_smoothing: float = 0.0
-    fp16: bool = True
+    fp16: bool = False
+    bf16: bool = True
+    max_grad_norm: float = 1.0
     logging_steps: int = 25
     eval_steps: int = 500
     save_steps: int = 500

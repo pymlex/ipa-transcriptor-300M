@@ -46,5 +46,11 @@ def preprocess_function(
         max_length=max_target_length,
         truncation=True,
     )
-    model_inputs["labels"] = labels["input_ids"]
+    pad_id = tokenizer.pad_token_id
+    masked_labels = []
+    for sequence in labels["input_ids"]:
+        masked_labels.append(
+            [token if token != pad_id else -100 for token in sequence]
+        )
+    model_inputs["labels"] = masked_labels
     return model_inputs

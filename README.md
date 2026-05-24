@@ -79,7 +79,7 @@ Training settings:
 - learning rate: `5e-5`
 - scheduler: warmup ratio `0.06`
 - optimiser: AdamW via `Seq2SeqTrainer`
-- mixed precision: `fp16` when CUDA is available
+- mixed precision: `bf16` on CUDA when supported, never `fp16` with ByT5
 - best checkpoint: lowest `eval_loss`
 
 The fine-tuned weights are saved to `runs/<run_name>/best/` in Hugging Face format.
