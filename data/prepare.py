@@ -47,6 +47,13 @@ def load_raw_csv(raw_dir: Path) -> pd.DataFrame:
     if len(csv_files) == 0:
         raise FileNotFoundError(f"No CSV found under {raw_dir}")
     frame = pd.read_csv(csv_files[0])
+    rename_map = {
+        "phon": "phonetic",
+        "syl": "syllable_len",
+        "start": "stress_pos",
+        "end": "stress_syllable",
+    }
+    frame = frame.rename(columns={key: value for key, value in rename_map.items() if key in frame.columns})
     return frame
 
 
@@ -56,8 +63,9 @@ def build_pairs(frame: pd.DataFrame) -> pd.DataFrame:
     if missing:
         raise ValueError(f"Missing columns: {missing}")
     subset = frame[["word", "phonetic"]].copy()
-    subset["word"] = subset["word"].map(normalise_word)
-    subset["phonetic"] = subset["phonetic"].map(normalise_ipa)
+    subset = subset.dropna(subset=["word", "phonetic"])
+    subset["word"] = subset["word"].astype(str).map(normalise_word)
+    subset["phonetic"] = subset["phonetic"].astype(str).map(normalise_ipa)
     subset = subset[subset["word"].str.len() > 0]
     subset = subset[subset["phonetic"].str.len() > 0]
     subset = subset[~subset["phonetic"].str.contains(r"\?|/-", regex=True)]

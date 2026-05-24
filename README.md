@@ -12,31 +12,59 @@ ipa: analytical  ->  ˌænəˈlɪtɪkəl
 
 Source: [schwartstack/english-phonetic-and-syllable-count-dictionary](https://www.kaggle.com/datasets/schwartstack/english-phonetic-and-syllable-count-dictionary).
 
-Each row contains:
+The raw Kaggle file `phoneticDictionary.csv` uses columns `word`, `phon`, `syl`, `start`, `end`. After renaming and cleaning we keep `word` and `phonetic`. Slashes and square brackets are stripped from IPA strings. Incomplete API artefacts such as `/-` and `?` are removed. Words are lowercased, null rows are dropped, and duplicates are removed by `word`.
 
-- `word`
-- `phonetic`
-- `part_of_speech`
-- `syllable_len`
-- `stress_pos`
-- `stress_syllable`
+The dictionary word list is larger, but only rows with a usable phonetic field are kept. The cleaned corpus has **125,925** word–IPA pairs.
 
-For training we keep only `word` and `phonetic`. Slashes and square brackets are stripped from IPA strings. Incomplete API artefacts such as `/-` and `?` are removed. Words are lowercased and deduplicated by `word`.
+Split `90/5/5` with seed `42`:
 
-The split is `90/5/5` with a fixed seed. Processed CSV files are written to `data/processed/`.
+| Split | Rows |
+| ----- | ---: |
+| Train | 113,332 |
+| Validation | 6,296 |
+| Test | 6,297 |
+
+### Length statistics in characters
+
+Lengths are measured in Unicode characters after normalisation.
+
+| Statistic | `word` | `phonetic` |
+| --------- | -----: | ---------: |
+| min | 1 | 1 |
+| median | 7 | 8 |
+| mean | 7.49 | 8.27 |
+| p90 | 11 | 12 |
+| p95 | 12 | 13 |
+| p99 | 14 | 16 |
+| max | 28 | 34 |
+
+Most entries are short: the median orthographic length is 7 characters and the median IPA length is 8 characters. Long-tail entries stay below 35 characters in IPA, so word-level subword models are a poor fit and byte-level seq2seq is appropriate.
+
+![Word length distribution](docs/word_length_hist.png)
+
+![IPA length distribution](docs/ipa_length_hist.png)
+
+Regenerate plots and `docs/dataset_stats.json`:
+
+```bash
+export PYTHONPATH=.
+python scripts/dataset_stats.py
+```
+
+Processed CSV files are written to `data/processed/`.
 
 ## Model
 
 Base model: [`google/byt5-small`](https://huggingface.co/google/byt5-small).
 
-IPA strings are mostly single Unicode symbols. Word-piece tokenizers such as T5 SentencePiece can merge several IPA characters into one subword, which hurts edit-level control. ByT5 tokenises at the UTF-8 byte level, so generation steps are much finer than whole words and usually shorter than typical BPE spans over IPA.
+With median length 7–8 characters and max length 34 in IPA, a word-piece or sentence-level Transformer is mismatched to the task. ByT5 tokenises at the UTF-8 byte level, so each decoding step changes a small part of the transcript instead of emitting long multi-character chunks learned from natural-language pretraining.
 
 Default configuration in `configs/default.yaml`:
 
 - `model_name_or_path`: `google/byt5-small`
 - `source_prefix`: `ipa: `
-- `max_source_length`: 64
-- `max_target_length`: 128
+- `max_source_length`: 40
+- `max_target_length`: 80
 
 Training settings:
 

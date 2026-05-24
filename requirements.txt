@@ -13,3 +13,4 @@ sacrebleu>=2.4.0
 editdistance>=0.8.1
 sentencepiece>=0.2.0
 protobuf>=4.25.0
+matplotlib>=3.8.0
