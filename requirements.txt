@@ -1,0 +1,15 @@
+torch>=2.2.0
+transformers>=4.44.0
+datasets>=2.20.0
+accelerate>=0.33.0
+numpy>=1.26.0
+pandas>=2.2.0
+pyyaml>=6.0.1
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+kaggle>=1.6.0
+huggingface_hub>=0.23.0
+sacrebleu>=2.4.0
+editdistance>=0.8.1
+sentencepiece>=0.2.0
+protobuf>=4.25.0
