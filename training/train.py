@@ -1,5 +1,6 @@
 import inspect
 import json
+import math
 import os
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,9 +31,23 @@ class MetricsLoggerCallback(TrainerCallback):
     def on_log(self, args, state, control, logs=None, **kwargs) -> None:
         if logs is None:
             return
+        epoch = float(state.epoch) if state.epoch is not None else 0.0
+        if not math.isfinite(epoch) or epoch > args.num_train_epochs + 1.0:
+            return
         record = dict(logs)
+        if "loss" in record and not math.isfinite(record["loss"]):
+            return
+        if "loss" in record and record["loss"] > 50.0 and "eval_loss" not in record:
+            return
+        if "eval_loss" in record:
+            record["phase"] = "eval"
+            record["learning_rate"] = record.get("learning_rate", 0.0)
+            if record["learning_rate"] > 1.0:
+                record.pop("learning_rate", None)
+        else:
+            record["phase"] = "train"
         record["step"] = int(state.global_step)
-        record["epoch"] = float(state.epoch) if state.epoch is not None else 0.0
+        record["epoch"] = epoch
         self.logger.log(record)
 
 
@@ -176,6 +191,7 @@ def run_training(config: TrainConfig, run_dir: Path) -> Path:
         flush=True,
     )
     trainer.train()
+    print("Training finished. Saving best checkpoint to runs/.../best", flush=True)
     best_dir = run_dir / "best"
     trainer.save_model(str(best_dir))
     tokenizer.save_pretrained(str(best_dir))
@@ -189,9 +205,24 @@ def run_training(config: TrainConfig, run_dir: Path) -> Path:
         "precision": precision,
     }
     (run_dir / "run_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
-    run_benchmark(
-        str(best_dir),
-        config,
-        run_dir / "benchmark.json",
-    )
+    print(f"Checkpoint saved: {best_dir}", flush=True)
+    if config.benchmark_after_train:
+        print(
+            "Running post-train benchmark with beam search on val and test. "
+            "This can take 20–40 minutes. Use a separate evaluate cell instead.",
+            flush=True,
+        )
+        run_benchmark(
+            str(best_dir),
+            config,
+            run_dir / "benchmark.json",
+            max_samples=config.benchmark_max_samples,
+        )
+        print(f"Benchmark written: {run_dir / 'benchmark.json'}", flush=True)
+    else:
+        print(
+            "Skipping post-train benchmark. Run: "
+            f"CHECKPOINT={best_dir} bash scripts/evaluate.sh",
+            flush=True,
+        )
     return best_dir

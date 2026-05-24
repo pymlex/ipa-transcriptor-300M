@@ -25,3 +25,5 @@ save_steps: 500
 beam_size: 4
 max_new_tokens: 56
 generation_num_beams: 4
+benchmark_after_train: false
+benchmark_max_samples:

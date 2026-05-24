@@ -29,6 +29,8 @@ class TrainConfig(BaseModel):
     beam_size: int = 4
     max_new_tokens: int = 56
     generation_num_beams: int = 4
+    benchmark_after_train: bool = False
+    benchmark_max_samples: int | None = None
 
 
 class BenchmarkResult(BaseModel):

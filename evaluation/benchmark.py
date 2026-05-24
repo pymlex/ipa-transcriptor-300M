@@ -99,7 +99,10 @@ def evaluate_split(
     frame,
     config: TrainConfig,
     device: torch.device,
+    max_samples: int | None = None,
 ) -> tuple[float, list[str], list[str]]:
+    if max_samples is not None:
+        frame = frame.iloc[:max_samples].reset_index(drop=True)
     dataset = IpaBenchmarkSet(frame, config.source_prefix)
     loader = DataLoader(
         dataset,
@@ -112,7 +115,7 @@ def evaluate_split(
     predictions: list[str] = []
     references: list[str] = []
     model.eval()
-    for batch in tqdm(loader, desc="benchmark", leave=False):
+    for batch in tqdm(loader, desc=f"benchmark n={len(dataset)}", leave=True):
         batch_loss = eval_loss_batch(
             model,
             tokenizer,
@@ -138,6 +141,7 @@ def run_benchmark(
     model_dir: str | Path,
     config: TrainConfig,
     output_path: str | Path,
+    max_samples: int | None = None,
 ) -> dict[str, BenchmarkResult]:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = AutoModelForSeq2SeqLM.from_pretrained(model_dir).to(device)
@@ -152,6 +156,7 @@ def run_benchmark(
             frame,
             config,
             device,
+            max_samples=max_samples,
         )
         record = BenchmarkResult(
             split=split_name,
