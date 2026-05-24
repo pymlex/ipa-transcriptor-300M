@@ -114,14 +114,34 @@ Decoding uses beam search with `num_beams=4`. Corpus BLEU is computed with Sacre
 
 ### Benchmark results
 
-Fine-tuned `google/byt5-small` on NVIDIA L4, run `colab_l4_bf16`, beam search:
+Fine-tuned `google/byt5-small` on NVIDIA L4, run `colab_l4_bf16`, beam search decoding.
 
-| Split | Loss | Perplexity | Exact match | CER | BLEU |
-| ----- | ---: | ---------: | ----------: | --: | ---: |
-| Validation | 0.151 | 1.164 | 0.598 | 0.107 | 59.8 |
-| Test | 0.148 | 1.159 | 0.611 | 0.104 | 61.1 |
+| Metric | Validation | Test |
+| ------ | ----------: | ---: |
+| `n_samples` | 6296 | 6297 |
+| `loss` | 0.1515 | 0.1478 |
+| `perplexity` | 1.1636 | 1.1592 |
+| `token_accuracy` | 0.7849 | 0.7858 |
+| `exact_match` | 0.5982 | 0.6111 |
+| `char_accuracy` | 0.8948 | 0.8969 |
+| `cer` | 0.1066 | 0.1045 |
+| `bleu` | 59.82 | 61.11 |
 
-Full JSON: `docs/colab_l4_bf16_benchmark.json`.
+Full JSON: `docs/colab_l4_bf16_benchmark.json`, run copy: `runs/colab_l4_bf16/benchmark.json`.
+
+### Training loss curves
+
+Train steps every 25 updates, validation every 500 steps.
+
+![Training and validation loss](docs/colab_l4_bf16_loss.png)
+
+![Training and validation loss log scale](docs/colab_l4_bf16_loss_log.png)
+
+Regenerate from `runs/colab_l4_bf16/metrics.csv`:
+
+```bash
+python scripts/plot_training_curves.py
+```
 
 ## Installation
 
