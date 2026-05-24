@@ -6,8 +6,8 @@ val_ratio: 0.05
 test_ratio: 0.05
 model_name_or_path: google/byt5-small
 source_prefix: "ipa: "
-max_source_length: 40
-max_target_length: 80
+max_source_length: 36
+max_target_length: 56
 batch_size: 64
 gradient_accumulation_steps: 2
 num_workers: 2
@@ -21,5 +21,5 @@ logging_steps: 50
 eval_steps: 500
 save_steps: 500
 beam_size: 4
-max_new_tokens: 64
+max_new_tokens: 56
 generation_num_beams: 4

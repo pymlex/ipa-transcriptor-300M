@@ -53,6 +53,10 @@ python scripts/dataset_stats.py
 
 Processed CSV files are written to `data/processed/`.
 
+### Sequence limits
+
+`max_source_length` and `max_target_length` are limits for the ByT5 tokenizer in **UTF-8 bytes**, not in the character counts from the table above. One IPA symbol is often 2–3 bytes. On the cleaned corpus the byte maxima are 33 for `ipa: {word}` and 53 for the IPA target, so the config uses 36 and 56 with a small margin.
+
 ## Model
 
 Base model: [`google/byt5-small`](https://huggingface.co/google/byt5-small).
@@ -63,8 +67,8 @@ Default configuration in `configs/default.yaml`:
 
 - `model_name_or_path`: `google/byt5-small`
 - `source_prefix`: `ipa: `
-- `max_source_length`: 40
-- `max_target_length`: 80
+- `max_source_length`: 36
+- `max_target_length`: 56
 
 Training settings:
 

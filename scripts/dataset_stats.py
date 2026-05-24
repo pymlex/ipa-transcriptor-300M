@@ -73,6 +73,13 @@ def main() -> None:
         "word": word_stats,
         "phonetic": ipa_stats,
     }
+    prefix = "ipa: "
+    source_texts = [f"{prefix}{word}" for word in pairs["word"].astype(str)]
+    ipa_texts = pairs["phonetic"].astype(str).tolist()
+    source_byte_lengths = np.array([len(text.encode("utf-8")) for text in source_texts], dtype=np.int64)
+    ipa_byte_lengths = np.array([len(text.encode("utf-8")) for text in ipa_texts], dtype=np.int64)
+    payload["source_utf8_bytes"] = length_stats(source_byte_lengths)
+    payload["phonetic_utf8_bytes"] = length_stats(ipa_byte_lengths)
     (docs_dir / "dataset_stats.json").write_text(
         json.dumps(payload, indent=2),
         encoding="utf-8",

@@ -10,8 +10,8 @@ class TrainConfig(BaseModel):
     test_ratio: float = 0.05
     model_name_or_path: str = "google/byt5-small"
     source_prefix: str = "ipa: "
-    max_source_length: int = 40
-    max_target_length: int = 80
+    max_source_length: int = 36
+    max_target_length: int = 56
     batch_size: int = 64
     gradient_accumulation_steps: int = 2
     num_workers: int = 2
@@ -25,7 +25,7 @@ class TrainConfig(BaseModel):
     eval_steps: int = 500
     save_steps: int = 500
     beam_size: int = 4
-    max_new_tokens: int = 64
+    max_new_tokens: int = 56
     generation_num_beams: int = 4
 
 
