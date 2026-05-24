@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project fine-tunes a Hugging Face seq2seq model for English word to IPA transcription. The base checkpoint is `google/t5-small`, trained with `transformers.Seq2SeqTrainer` on the Kaggle dataset [English phonetic and syllable count dictionary](https://www.kaggle.com/datasets/schwartstack/english-phonetic-and-syllable-count-dictionary). The task format is:
+This project fine-tunes a Hugging Face seq2seq model for English word to IPA transcription. The base checkpoint is `google/byt5-small`, trained with `transformers.Seq2SeqTrainer` on the Kaggle dataset [English phonetic and syllable count dictionary](https://www.kaggle.com/datasets/schwartstack/english-phonetic-and-syllable-count-dictionary). The task format is:
 
 ```text
 ipa: analytical  ->  ˌænəˈlɪtɪkəl
@@ -27,14 +27,16 @@ The split is `90/5/5` with a fixed seed. Processed CSV files are written to `dat
 
 ## Model
 
-Base model: [`google/t5-small`](https://huggingface.co/google/t5-small).
+Base model: [`google/byt5-small`](https://huggingface.co/google/byt5-small).
+
+IPA strings are mostly single Unicode symbols. Word-piece tokenizers such as T5 SentencePiece can merge several IPA characters into one subword, which hurts edit-level control. ByT5 tokenises at the UTF-8 byte level, so generation steps are much finer than whole words and usually shorter than typical BPE spans over IPA.
 
 Default configuration in `configs/default.yaml`:
 
-- `model_name_or_path`: `google/t5-small`
+- `model_name_or_path`: `google/byt5-small`
 - `source_prefix`: `ipa: `
-- `max_source_length`: 32
-- `max_target_length`: 64
+- `max_source_length`: 64
+- `max_target_length`: 128
 
 Training settings:
 
@@ -55,7 +57,7 @@ The fine-tuned weights are saved to `runs/<run_name>/best/` in Hugging Face form
 Teacher-forcing loss from `transformers`:
 
 $$
-\mathcal{L} = -\frac{1}{N}\sum_{i=1}^{N} \log p_\theta(y_i \mid y_{<i}, x)
+\mathcal{L} = -\frac{1}{N}\sum_{i=1}^{N} \log p_\theta\bigl(y_i \mid y_{1:i-1}, x\bigr)
 $$
 
 Perplexity:
@@ -165,7 +167,7 @@ python scripts/inference.py \
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import torch
 
-model_id = "pymlex/ipa-transcriptor-60M"
+model_id = "pymlex/ipa-transcriptor-300M"
 source_prefix = "ipa: "
 
 tokenizer = AutoTokenizer.from_pretrained(model_id)

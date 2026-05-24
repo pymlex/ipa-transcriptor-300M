@@ -8,10 +8,10 @@ class TrainConfig(BaseModel):
     train_ratio: float = 0.9
     val_ratio: float = 0.05
     test_ratio: float = 0.05
-    model_name_or_path: str = "google/t5-small"
+    model_name_or_path: str = "google/byt5-small"
     source_prefix: str = "ipa: "
-    max_source_length: int = 32
-    max_target_length: int = 64
+    max_source_length: int = 64
+    max_target_length: int = 128
     batch_size: int = 64
     gradient_accumulation_steps: int = 2
     num_workers: int = 2
